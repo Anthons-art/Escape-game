@@ -1,12 +1,103 @@
+# ==========================================================Import==============================================================
+import json
+import os
 import random
 import time
 
+
+# ==========================================================Spartfil==============================================================
+SPARFIL = "speldata.txt"
+# ==========================================================Variabel==============================================================
 bonus_mot_alvin = False
 inventory = []
 karaktär = ""
 karaktär_bonus = {}
+# ==========================================================MENY==============================================================
+def visa_instruktioner():
+    try:
+        with open("readme.txt", "r", encoding="utf-8") as fil:
+            print(fil.read())
+    except FileNotFoundError:
+        print("readme.txt kunde inte hittas.")
+
+def start():
+    print("=== FLY FRÅN ALVIN ===")
+    print("1. Starta nytt spel")
+    print("2. Ladda sparat spel")
+    print("3. Radera sparat spel")
+    print("4. Läs spelinstruktionerna")
+    val = input("Välj ett alternativ: ").strip()
+
+    if val == "1":
+        nytt_spel()
+    elif val == "2":
+        om_laddad = ladda_spel()
+        if om_laddad:
+            print("Spelet återupptas...")
+            ett_till_rum() 
+        else:
+            nytt_spel()
+
+    elif val == "3":
+        radera_sparfil()
+        start()
+    elif val == "4":
+        visa_instruktioner()
+        input("PRESS any wordle to get back ")
+        start()
+    else:
+        print("Ogiltigt val.")
+        start()
 
 
+# ==========================================================Funktion för sparfil==============================================================
+# funktion för att spara spelet
+def spara_spel():
+    # variabler i spelet vars data sparas
+    data = {
+        "bonus_mot_alvin": bonus_mot_alvin,
+        "inventory": inventory,
+        "karaktär": karaktär,
+        "karaktär_bonus": karaktär_bonus,
+    }
+# öppnar filen som heter SPARFIL i skrivläge och sparar datan som JSON
+    with open(SPARFIL, "w") as f: 
+        json.dump(data, f) # Skriver dictionary till filen i JSON format
+    print("Spelet har sparats!")
+
+# Funktion att ladda ett psarat spel 
+def ladda_spel():
+    # Deklarerar att de här variablerna är globala 
+    global bonus_mot_alvin, inventory, karaktär, karaktär_bonus
+# Den kollar så att filen finns annars ett medelande 
+    if not os.path.exists(SPARFIL):
+        print("Ingen sparfil hittades.")
+        return False
+# öppnar filen och läser tillbaka datan till programet
+    with open(SPARFIL, "r") as f:
+        # Skriver in JSON innehållet in i vårat directory 
+        data = json.load(f)
+# ladda in de värden vi har sparat
+    bonus_mot_alvin = data["bonus_mot_alvin"]
+    inventory.clear()
+    inventory.extend(data["inventory"])
+    karaktär = data["karaktär"]
+    karaktär_bonus = data["karaktär_bonus"]
+
+    print(f"Spelet laddades! Du spelar som {karaktär} och har {len(inventory)} föremål.")
+    return True
+
+# tar bort den sparade filen 
+def radera_sparfil():
+    # kollar så att filen finns annars error medelande
+    if os.path.exists(SPARFIL):
+        os.remove(SPARFIL)
+        print("Sparfilen har raderats.")
+    else:
+        print("Ingen sparfil att radera.")
+
+
+# ===============================================================Start Definitioner==============================================================
 def välj_karaktär():
     global karaktär, karaktär_bonus
     print("\nVälj din karaktär:")
@@ -50,6 +141,7 @@ def använd_föremål():
 
     visa_ryggsäck()
     val = input("Ange numret på föremålet du vill använda (eller tryck Enter för att avbryta): ").strip()
+    print()
     if val == "":
         return 0
 
@@ -68,6 +160,14 @@ def använd_föremål():
         print(f"Du använder en healing-potion och återfår {heal} HP!")
         return heal
 
+    elif föremål == "mystisk ring":
+        extra = random.randint(1,100)
+        if karaktär_bonus.get("föremål_bonus"):
+            extra += 5
+        inventory.remove(föremål)
+        print(f"Du sätter på den mystiska ringen och gör {extra} extra skada i denna runda!")
+        return -extra
+
     elif föremål == "stark attack-elixir":
         extra = random.randint(10, 20)
         if karaktär_bonus.get("föremål_bonus"):
@@ -79,13 +179,15 @@ def använd_föremål():
     else:
         print("Föremålet har ingen effekt just nu.")
         return 0
-
+    
 def lägg_till_föremål(föremål):
     inventory.append(föremål)
-    print(f" Du har fått ett nytt föremål: {föremål}")
+    print(f"Du har fått ett nytt föremål: {föremål}")
+    spara_spel()
 
+# ===============================================================RUM==============================================================
 
-def start():
+def nytt_spel():
     global bonus_mot_alvin
     bonus_mot_alvin = False
     välj_karaktär()
@@ -97,8 +199,19 @@ def start():
         ett_till_rum()
     else:
         print("Du måste hitta nyckeln först. Försök igen!")
-        start()
+        nytt_spel1()
 
+def nytt_spel1():
+    global bonus_mot_alvin
+    bonus_mot_alvin = False
+    print("Du är fortfarande i cellen.")
+    har_nyckel = input("Har du nyckeln? (ja/nej): ").strip().lower()
+
+    if har_nyckel == "ja":
+        ett_till_rum()
+    else:
+        print("Du måste hitta nyckeln först. Försök igen!")
+        nytt_spel()
 
 def ett_till_rum():
     print("\nDu är i ett till rum.")
@@ -111,18 +224,42 @@ def ett_till_rum():
     else:
         print("Ogiltigt val. Försök igen.")
         ett_till_rum()
-
-def pussel():
-    print("\nDu stöter på ett pussel.")
-    svar = input("Gåta: Vad är alltid framför dig men kan aldrig ses? ").strip().lower()
     
-    if "framtiden" in svar:
-        print("Rätt svar!")
-        lägg_till_föremål("healing-potion")
-        tickande_bomb()
-    else:
-        print("Fel svar. Försök igen.")
-        pussel()
+def pussel():
+    print("\nDu stöter på ett pussel.") 
+    pusselval = random.choice(["1", "2", "3"])
+    if pusselval == "1":
+            svar = input("Gåta: Vad är alltid framför dig men kan aldrig ses? ").strip().lower()
+            while svar != "framtiden":
+                print("Fel svar, försök igen.")
+                svar = input()
+                print("Det är inte baktiden.")
+                
+            print("Rätt svar!")
+            lägg_till_föremål("healing-potion")
+            tickande_bomb()
+
+    elif pusselval == "2":
+            svar = input("Gåta: Vad kan du hålla i din vänstra hand men aldrig i din högra? ").strip().lower()
+            while svar != "Höger hand" or "höger hand" or "Din högra hand":
+                print("Fel svar, försök igen.")
+                svar = input()
+                print("Det är inte din högra fot (Det kan jag lova).")
+                
+            print("Rätt svar!")
+            lägg_till_föremål("healing-potion")
+            tickande_bomb()
+
+    elif pusselval == "3":
+            svar = input("Gåta: Vad har ett öga men kan inte se? ").strip().lower()
+            while svar != "En nål" or "en nål" or "nål":
+                print("Fel svar, försök igen.")
+                svar = input()
+                print("Det är inte en flygel (det må det inte vara!)")
+                
+            print("Rätt svar!")
+            lägg_till_föremål("healing-potion")
+            tickande_bomb()
 
 def tickande_bomb():
     global bonus_mot_alvin
@@ -132,11 +269,11 @@ def tickande_bomb():
     försök_kvar = 3
 
     while försök_kvar > 0:
-        gissning = input(f"\nSkriv in 1-siffrig kod (1-10) (Försök kvar: {försök_kvar}): ")
+        gissning = input(f"\nSkriv en siffra i intervallet 1-10 kod (1-10) (Försök kvar: {försök_kvar}): ")
         if gissning == kod:
             print("Du lyckades avaktivera bomben! Du får en bonus i nästa strid.")
             bonus_mot_alvin = True
-            Alvin()
+            staty_rum()
             return
         else:
             print("Fel kod!")
@@ -144,7 +281,7 @@ def tickande_bomb():
 
     print("Bomben exploderar! Du överlever men skadas allvarligt.")
     bonus_mot_alvin = False
-    Alvin(extra_skada=True)
+    labyrint()
 
 def Anthin():
     print("\nDu möter Anthin – en vakt blockerar din väg!")
@@ -166,15 +303,47 @@ def snabb_dörr_reflex():
 
     if svar == "e" and tid_tagen <= 3:
         print("Du hann genom dörren precis i tid!")
-        Alvin()
+        staty_rum()
     else:
         print("Du var för långsam eller tryckte fel! Dörren slog igen på dig.")
-        print("Du tar skada innan du möter Alvin.")
-        Alvin(extra_skada=True)
+        print("Du tar skada innan du kommer in i en labyrint")
+        staty_rum()
+
+def staty_rum():
+    print("\nDu går in i ett dunkelt rum med en mystisk staty i mitten.")
+    print("En inskription lyder: 'Jag lyser på natten men försvinner på dagen. Vad är jag?'")
+    svar = input("Skriv ditt svar: ").strip().lower()
+    
+    if "stjärna" or "stjärnor" or "stjärna" or "månen" or "måne" in svar:
+        print("Rätt svar! Statyns mun öppnas och ett föremål faller ut.")
+        lägg_till_föremål("guldnyckel")
+        labyrint()
+    else:
+        print("Fel svar. Statyn rör sig hotfullt. Försök igen!")
+        staty_rum()
+        
+def labyrint():
+    print("\nDu hamnar i en mystisk labyrint som inte borde få plats i alvins lilla hus och måste välja rätt väg!")
+    val = input("Välj riktning (vänster/höger/rakt fram): ").strip().lower()
+    
+    if val == "vänster":
+        print("Du hittar en genväg ut!")
+        Alvin()
+    elif val == "höger":
+        print("Du går vilse och hamnar tillbaka vid starten.")
+        labyrint()
+    elif val == "rakt fram":
+        print("Du hittar en kista!")
+        lägg_till_föremål("mystisk ring")
+        Alvin()
+    else:
+        print("Ogiltigt val. Försök igen.")
+        labyrint()
+
 
 def Alvin(extra_skada=False):
     print("\nDu möter slutbossen: Alvin!")
-    fiende_hp = 50
+    fiende_hp = 65
     if bonus_mot_alvin:
         fiende_hp -= 15
         print("Du har en fördel – Alvin har mindre HP tack vare bombframgång!")
@@ -186,13 +355,14 @@ def Alvin(extra_skada=False):
         if avslut == "frihet":
             print("\nDu har hittat vägen ut ur Alvins hus och räddat din värdighet. Du vann!")
         elif avslut == "fångad_igen":
-            print("\nPrecis när du tror att du är fri, fångar Alvin dig igen. Du är tillbaka i cellen. Spelet börjar om...")
+            print("\nPrecis när du tror att du är fri, fångar Alvins hund Timmy dig och äter upp dig. Bättre lycka nästa gång...")
             start()
         elif avslut == "förbannelse":
             print("\nDu besegrar Alvin... men förbannelsen över huset fångar din själ. Du blir nästa fånge. Spelet slutar här.")
     else:
         print("\nAlvin besegrar dig... Du ser mörkret falla och ditt öde är beseglat. Du dog. Game over.")
 
+# ==========================================================Stridsystemet=============================================================
 def stridssystem(fiende_namn, fiende_hp, fiende_skada, extra_skada=False):
     spelar_hp = 40
     självläkningar_kvar = 3  # Ny variabel för max antal självläkningar
@@ -257,11 +427,13 @@ def stridssystem(fiende_namn, fiende_hp, fiende_skada, extra_skada=False):
         else:
             print("Du vaknar tillbaka i cellen...")
             start()
+            spara_spel()
             return True
     else:
         print(f"\nDu besegrade {fiende_namn}!")
+        spara_spel()
         return True
 
-
+# ===============================================================Starta programmet=============================================================
 
 start()

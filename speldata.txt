@@ -1,1 +1,1 @@
-{"bonus_mot_alvin": false, "inventory": ["healing-potion"], "karakt\u00e4r": "Tjuv", "karakt\u00e4r_bonus": {"undvik_chans": 0.25}}
+{"bonus_mot_alvin": false, "inventory": ["healing-potion"], "karakt\u00e4r": "L\u00e4kare", "karakt\u00e4r_bonus": {"extra_l\u00e4kning": 5}}

@@ -3,6 +3,8 @@ import json
 import os
 import random
 import time
+
+
 # ==========================================================Spartfil==============================================================
 SPARFIL = "speldata.txt"
 # ==========================================================Variabel==============================================================
@@ -11,11 +13,19 @@ inventory = []
 karaktär = ""
 karaktär_bonus = {}
 # ==========================================================MENY==============================================================
+def visa_instruktioner():
+    try:
+        with open("readme.txt", "r", encoding="utf-8") as fil:
+            print(fil.read())
+    except FileNotFoundError:
+        print("readme.txt kunde inte hittas.")
+
 def start():
     print("=== FLY FRÅN ALVIN ===")
     print("1. Starta nytt spel")
     print("2. Ladda sparat spel")
     print("3. Radera sparat spel")
+    print("4. Läs spelinstruktionerna")
     val = input("Välj ett alternativ: ").strip()
 
     if val == "1":
@@ -30,6 +40,10 @@ def start():
 
     elif val == "3":
         radera_sparfil()
+        start()
+    elif val == "4":
+        visa_instruktioner()
+        input("PRESS any wordle to get back ")
         start()
     else:
         print("Ogiltigt val.")
@@ -127,6 +141,7 @@ def använd_föremål():
 
     visa_ryggsäck()
     val = input("Ange numret på föremålet du vill använda (eller tryck Enter för att avbryta): ").strip()
+    print()
     if val == "":
         return 0
 
@@ -209,19 +224,42 @@ def ett_till_rum():
     else:
         print("Ogiltigt val. Försök igen.")
         ett_till_rum()
-
-
-def pussel():
-    print("\nDu stöter på ett pussel.")
-    svar = input("Gåta: Vad är alltid framför dig men kan aldrig ses? ").strip().lower()
     
-    if "framtiden" in svar:
-        print("Rätt svar!")
-        lägg_till_föremål("healing-potion")
-        tickande_bomb()
-    else:
-        print("Fel svar. Försök igen.")
-        pussel()
+def pussel():
+    print("\nDu stöter på ett pussel.") 
+    pusselval = random.choice(["1", "2", "3"])
+    if pusselval == "1":
+            svar = input("Gåta: Vad är alltid framför dig men kan aldrig ses? ").strip().lower()
+            while svar != "framtiden":
+                print("Fel svar, försök igen.")
+                svar = input()
+                print("Det är inte baktiden.")
+                
+            print("Rätt svar!")
+            lägg_till_föremål("healing-potion")
+            tickande_bomb()
+
+    elif pusselval == "2":
+            svar = input("Gåta: Vad kan du hålla i din vänstra hand men aldrig i din högra? ").strip().lower()
+            while svar != "Höger hand" or "höger hand" or "Din högra hand":
+                print("Fel svar, försök igen.")
+                svar = input()
+                print("Det är inte din högra fot (Det kan jag lova).")
+                
+            print("Rätt svar!")
+            lägg_till_föremål("healing-potion")
+            tickande_bomb()
+
+    elif pusselval == "3":
+            svar = input("Gåta: Vad har ett öga men kan inte se? ").strip().lower()
+            while svar != "En nål" or "en nål" or "nål":
+                print("Fel svar, försök igen.")
+                svar = input()
+                print("Det är inte en flygel (det må det inte vara!)")
+                
+            print("Rätt svar!")
+            lägg_till_föremål("healing-potion")
+            tickande_bomb()
 
 def tickande_bomb():
     global bonus_mot_alvin
@@ -231,7 +269,7 @@ def tickande_bomb():
     försök_kvar = 3
 
     while försök_kvar > 0:
-        gissning = input(f"\nSkriv in 1-siffrig kod (1-10) (Försök kvar: {försök_kvar}): ")
+        gissning = input(f"\nSkriv en siffra i intervallet 1-10 kod (1-10) (Försök kvar: {försök_kvar}): ")
         if gissning == kod:
             print("Du lyckades avaktivera bomben! Du får en bonus i nästa strid.")
             bonus_mot_alvin = True
@@ -317,7 +355,7 @@ def Alvin(extra_skada=False):
         if avslut == "frihet":
             print("\nDu har hittat vägen ut ur Alvins hus och räddat din värdighet. Du vann!")
         elif avslut == "fångad_igen":
-            print("\nPrecis när du tror att du är fri, fångar Alvin dig igen. Du är tillbaka i cellen. Spelet börjar om...")
+            print("\nPrecis när du tror att du är fri, fångar Alvins hund Timmy dig och äter upp dig. Bättre lycka nästa gång...")
             start()
         elif avslut == "förbannelse":
             print("\nDu besegrar Alvin... men förbannelsen över huset fångar din själ. Du blir nästa fånge. Spelet slutar här.")
